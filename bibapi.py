@@ -276,11 +276,11 @@ class BibAPI:
 
 
 
-## Ususal API calls
+## Usual API calls
 
 def ror_affiliation(affil):
     TheClient = BibAPI()
-    return TheClient.ror(params={"affiliation": affil.encode('utf8')})
+    return TheClient.ror(params={"affiliation": affil})
 
 def ror_id(affil):
     return safe_access(ror_affiliation(affil), ["items",0,"organization","id"])
