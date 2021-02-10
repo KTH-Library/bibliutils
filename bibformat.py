@@ -22,7 +22,7 @@ def fix_identifier(ustring,idtype=None,online_method=None,regexp=None):
     elif idtype.lower() == 'issn':
         regexp = r'\b\d{4}-\d{3}[\dxX]\b'
     elif idtype.lower() == 'pmid':
-        regexp = r'\b(\d)+\b'
+        regexp = r'\b\d+\b'
     elif idtype.lower() == 'scopusid':
         regexp = r'2-s2\.0-\d{10,11}'
     elif idtype.lower() == 'ut' or idtype.lower() == 'isi':

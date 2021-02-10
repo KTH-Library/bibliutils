@@ -13,6 +13,15 @@
 ## With this option activated, the function returns an empty string if the identifier is not recognized, even if its format is correct
 ############
 
+
+#IMPORTANT: Online check uses functions from the library bibapi that require API keys for Scopus and Web of Science to be defined in environment variables
+#uncomment the line below and define your Scopus API key
+#os.environ['SCOPUS_KEY'] =
+#uncomment the line below and define your Scopus institutional token below if you have one associated with your key
+#os.environ['SCOPUS_TOKEN'] =
+#uncomment the line below and define your Web of Science API key
+#os.environ['WOS_KEY'] =
+
 import os
 import requests
 import bibformat
@@ -88,11 +97,7 @@ bibformat.fix_isbn(req3.text)
 ### Scopus ID ###
 #Same principle as above
 bibformat.fix_scopusid("2-s2.0-84870230502")
-#IMPORTANT: Online check uses functions from the library bibapi that require a Scopus API key to be defined in an environment variable
-#uncomment the line below and define your Scopus API key
-#os.environ['SCOPUS_KEY'] =
-#uncomment the line below and define your Scopus institutional token below if you have one associated with your key
-#os.environ['SCOPUS_TOKEN'] =
+#IMPORTANT: Online check uses functions from the library bibapi that require a Scopus API key to be defined in an environment variable. See how to do this temporarily at the top at this file (it should be done before importing bibformat)
 bibformat.fix_scopusid("2-s2.0-84870230502", online_check=True)
 bibformat.fix_scopusid("2-s2.0-00000000001")
 bibformat.fix_scopusid("2-s2.0-00000000001", online_check=True)
@@ -101,9 +106,7 @@ bibformat.fix_scopusid("2-s2.0-00000000001", online_check=True)
 #Same principle as above
 bibformat.fix_ut("000380087400009")
 bibformat.fix_ut("A1980HY50600004") #old format
-#IMPORTANT: Online check uses functions from the library bibapi that require a Web of Science API key to be defined in an environment variable
-#uncomment the line below and define your Web of Science API key
-#os.environ['WOS_KEY'] =
+#IMPORTANT: Online check uses functions from the library bibapi that require a Web of Science API key to be defined in an environment variable. See how to do this temporarily at the top at this file (it should be done before importing bibformat)
 bibformat.fix_ut("000380087400009", online_check = True)
 bibformat.fix_ut("000999999999999")
 bibformat.fix_ut("000999999999999", online_check = True)
