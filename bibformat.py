@@ -45,7 +45,7 @@ def fix_identifier(ustring,idtype=None,online_method=None,regexp=None):
 
 
 ### ONLINE CHECKS ###
-import bibapi_v2
+import bibapi
 import requests
 
 #Method for checking that an identifier corresponds to a correct web location
@@ -82,13 +82,13 @@ def issn_has_content(ustring):
     return identifier_has_location(ustring,idtype='issn')
 
 def scopusid_has_content(ustring):
-    rec = bibapi_v2.scopus_search("EID(" + ustring + ")")
-    nres = int(bibapi_v2.safe_access(rec,['search-results','opensearch:totalResults'],'0'))
+    rec = bibapi.scopus_search("EID(" + ustring + ")")
+    nres = int(bibapi.safe_access(rec,['search-results','opensearch:totalResults'],'0'))
     return nres > 0
 
 def ut_has_content(ustring):
-    rec = bibapi_v2.wos_search("UT=" + ustring)
-    nres = bibapi_v2.safe_access(rec,['QueryResult','RecordsFound'],0)
+    rec = bibapi.wos_search("UT=" + ustring)
+    nres = bibapi.safe_access(rec,['QueryResult','RecordsFound'],0)
     return nres > 0
 
 
@@ -150,7 +150,7 @@ def fix_pmid(ustring,online_check=False):
 def fix_doi(ustring,online_check=False,check_what="handle"):
     if online_check:
         if check_what == "handle":
-            return fix_identifier(ustring,'doi',online_method=bibapi_v2.doi_handle)
+            return fix_identifier(ustring,'doi',online_method=bibapi.doi_handle)
         elif check_what == "content":
             return fix_identifier(ustring,'doi',online_method=doi_has_content)
         else:
