@@ -233,11 +233,13 @@ class BibAPI:
         if ALTMETRICS_API_KEY and "key" not in map(str.lower, params.keys()):
             params["key"] = ALTMETRICS_API_KEY
         return self.call(path=path, params=params, headers=headers, proxies=proxies, method=method)
-    def clarivate(self, path="", params={}, headers={"accept": 'application/json'}, proxies={}, method=None, apiname="wos"):
+    def clarivate(self, path="", params={}, headers={}, proxies={}, method=None, apiname="wos"):
         global WOS_KEY
         self.__init__(service='clarivate', apiname=apiname)
         if WOS_KEY and "x-apikey" not in map(str.lower, headers.keys()):
             headers["X-ApiKey"] = WOS_KEY
+        if "accept" not in map(str.lower, headers.keys()):
+            headers["accept"] = "application/json"
         DefaultParams = {"count": "100","firstRecord": "1"}
         if path.lower() in ["", "related", "citing", "references"] or "id/" in path.lower():
             DefaultParams["databaseId"] = "WOK"
@@ -285,21 +287,21 @@ def ror_affiliation(affil):
 def ror_id(affil):
     return safe_access(ror_affiliation(affil), ["items",0,"organization","id"])
 
-def scopus_search(query):
+def scopus_search(query,headers={},proxies={}):
     TheClient = BibAPI()
-    return TheClient.elsevier(path='search/scopus', params={"query": query}, apiname='scopus')
+    return TheClient.elsevier(path='search/scopus', params={"query": query}, apiname='scopus', headers=headers, proxies=proxies)
 
-def wos_search(query,databaseid="WOK"):
+def wos_search(query,databaseid="WOK",headers={},proxies={}):
     TheClient = BibAPI()
-    return TheClient.clarivate(params={"usrQuery": query, "databaseId": databaseid}, apiname='wos')
+    return TheClient.clarivate(params={"usrQuery": query, "databaseId": databaseid}, apiname='wos', headers=headers, proxies=proxies)
 
-def wos_search_params(path="",params={}):
+def wos_search_params(path="",params={},headers={},proxies={}):
     TheClient = BibAPI()
-    return TheClient.clarivate(path=path,params=params, apiname='wos')
+    return TheClient.clarivate(path=path,params=params, apiname='wos', headers=headers, proxies=proxies)
 
-def doi_handle(doi):
+def doi_handle(doi,headers={},proxies={}):
     TheClient = BibAPI()
-    res = TheClient.doi(path=doi, params={"type": "URL"})
+    res = TheClient.doi(path=doi, params={"type": "URL"}, headers=headers, proxies=proxies)
     return str(safe_access(res, ["values", 0, "data","value"], ""))
 
 ## Scopus API calls
