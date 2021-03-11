@@ -9,7 +9,7 @@ import re
 ##Returns the recognized identifier or an empty string ifthe format is wrong
 ##Online check possible by providing an online method, see examples below
 ##Predefined types supported: DOI, ISBN, ISSN, PMID, Scopus ID (EID), UT (aka ISI)
-def fix_identifier(ustring,idtype=None,online_method=None,regexp=None,headers={},proxies={}):
+def fix_identifier(ustring,idtype=None,online_method=None,regexp=None,headers={},proxies={},timeout=None):
     idtype = str(idtype)
     if regexp:
         #Passing regexp in argument overrides the predefined regular expressions
@@ -35,7 +35,7 @@ def fix_identifier(ustring,idtype=None,online_method=None,regexp=None,headers={}
         the_id = match.group(0)
         isFound = True
         if online_method:
-            online_res = online_method(the_id,headers=headers,proxies=proxies)
+            online_res = online_method(the_id,headers=headers,proxies=proxies,timeout=timeout)
             if not online_res:
                 isFound = False
         return isFound*the_id
@@ -47,9 +47,10 @@ def fix_identifier(ustring,idtype=None,online_method=None,regexp=None,headers={}
 ### ONLINE CHECKS ###
 import bibapi
 import requests
+import json
 
 #Method for checking that an identifier corresponds to a correct web location
-def identifier_has_location(idstring,idtype=None,urlbase=None,timeout=10,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.0; WOW64; rv:24.0) Gecko/20100101 Firefox/24.0'},proxies={}):
+def identifier_has_location(idstring,idtype=None,urlbase=None,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.0; WOW64; rv:24.0) Gecko/20100101 Firefox/24.0'},proxies={},timeout=None):
     idtype = str(idtype)
     if urlbase:
         pass
@@ -62,72 +63,73 @@ def identifier_has_location(idstring,idtype=None,urlbase=None,timeout=10,headers
     else:
         print("Identifier type " + idtype + " not supported")
     try:
-        req = requests.get("https://" + urlbase + "/" + idstring, timeout=timeout, headers=headers, proxies=proxies)
+        req = requests.get("https://" + urlbase + "/" + idstring, headers=headers, proxies=proxies, timeout=timeout)
         if idtype == 'issn':
             isFound = (fix_issn(req.text, False) != "")
         else:
             isFound = req.status_code == 200
-    except requests.exceptions.RequestException:
-        print('\nWARNING: "requests.get()" raised an exception for ' + idstring + ', treated as not found')
+    except requests.exceptions.RequestException as e:
+        print('\nWARNING: "requests.get()" raised an exception for ' + idtype + ':' + idstring + ', treated as not found\nException: ' + str(e) + (proxies != {})*('\nProxies: ' + str(proxies)))
         isFound = False
     return isFound
 
-def doi_has_content(ustring,headers={},proxies={}):
-    return identifier_has_location(ustring,idtype='doi')
+def doi_has_content(ustring,headers={},proxies={},timeout=None):
+    return identifier_has_location(ustring,idtype='doi',headers=headers,proxies=proxies,timeout=timeout)
 
-def pmid_has_content(ustring,headers={},proxies={}):
-    return identifier_has_location(ustring,idtype='pmid')
+def pmid_has_content(ustring,headers={},proxies={},timeout=None):
+    return identifier_has_location(ustring,idtype='pmid',headers=headers,proxies=proxies,timeout=timeout)
 
-def issn_has_content(ustring,headers={},proxies={}):
-    return identifier_has_location(ustring,idtype='issn')
+def issn_has_content(ustring,headers={},proxies={},timeout=None):
+    return identifier_has_location(ustring,idtype='issn',headers=headers,proxies=proxies,timeout=timeout)
 
-def scopusid_has_content(ustring,headers={},proxies={}):
-    rec = bibapi.scopus_search("EID(" + ustring + ")")
+def scopusid_has_content(ustring,headers={},proxies={},timeout=None):
+    rec = bibapi.scopus_search("EID(" + ustring + ")",headers=headers,proxies=proxies,timeout=timeout)
     nres = int(bibapi.safe_access(rec,['search-results','opensearch:totalResults'],'0'))
     return nres > 0
 
-def ut_has_content(ustring,headers={},proxies={}):
-    rec = bibapi.wos_search("UT=" + ustring)
+def ut_has_content(ustring,headers={},proxies={},timeout=None):
+    rec = bibapi.wos_search("UT=" + ustring,headers=headers,proxies=proxies,timeout=timeout)
     nres = bibapi.safe_access(rec,['QueryResult','RecordsFound'],0)
     return nres > 0
 
-
-import json
-
-def isbn_has_content(ustring,verbose=False,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.0; WOW64; rv:24.0) Gecko/20100101 Firefox/24.0'},proxies={}):
+def isbn_has_content(ustring,verbose=False,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.0; WOW64; rv:24.0) Gecko/20100101 Firefox/24.0'},proxies={},timeout=None):
     #Special case of an empty string (some services can return a false positive)
     if not(ustring):
-        return ""
+        return False
     isbncand = ustring.replace('-','').replace(' ','')
-    LocList = ["Google Books API", "Open Library Book API", "ISBN search", "Books by ISBN"]
+    LocList = ["Libris","Google Books API","Open Library Book API","ISBN search","Books by ISBN"]
     acc = 0
-    try:
-        req = requests.get("https://www.googleapis.com/books/v1/volumes?q=isbn:" + isbncand, timeout=10, headers=headers, proxies=proxies)
-        isFound = req.json()["totalItems"] > 0
-    except requests.exceptions.RequestException:
-        print('\nWARNING: "requests.get()" raised an exception for ' + ustring + ', treated as not found')
-        isFound = False
+    isFound = (bibapi.safe_access(bibapi.libris_isbn_search(isbncand, headers=headers, proxies=proxies, timeout=timeout),["xsearch","records"],0) > 0)
     if not isFound:
         acc += 1
         try:
-            req = requests.get("https://openlibrary.org/api/books?bibkeys=ISBN:" + isbncand + "&format=json", timeout=10, headers=headers, proxies=proxies)
+            req = requests.get("https://www.googleapis.com/books/v1/volumes?q=isbn:" + isbncand, headers=headers, proxies=proxies, timeout=timeout)
+            isFound = req.json()["totalItems"] > 0
+        except requests.exceptions.RequestException as e:
+            print('\nWARNING: "requests.get()" raised an exception for isbn:' + ustring + ', treated as not found\nException: ' + str(e) + (proxies != {})*('\nProxies: ' + str(proxies)))
+    if not isFound:
+        acc += 1
+        try:
+            req = requests.get("https://openlibrary.org/api/books?bibkeys=ISBN:" + isbncand + "&format=json", headers=headers, proxies=proxies, timeout=timeout)
             isFound = len(req.json()) > 0
-        except requests.exceptions.RequestException:
-            print('\nWARNING: "requests.get()" raised an exception for ' + ustring + ', treated as not found')
+        except requests.exceptions.RequestException as e:
+            print('\nWARNING: "requests.get()" raised an exception for isbn:' + ustring + ', treated as not found\nException: ' + str(e) + (proxies != {})*('\nProxies: ' + str(proxies)))
+        except ValueError:
+            print('\nWARNING: Open Library service appears to be offline for isbn:' + ustring + ', treated as not found')
     if not isFound:
         acc += 1
         try:
-            req = requests.get("https://isbnsearch.org/isbn/" + isbncand, timeout=10, headers=headers, proxies=proxies)
+            req = requests.get("https://isbnsearch.org/isbn/" + isbncand, headers=headers, proxies=proxies, timeout=timeout)
             isFound = req.status_code == 200
-        except requests.exceptions.RequestException:
-            print('\nWARNING: "requests.get()" raised an exception for ' + ustring + ', treated as not found')
+        except requests.exceptions.RequestException as e:
+            print('\nWARNING: "requests.get()" raised an exception for isbn:' + ustring + ', treated as not found\nException: ' + str(e) + (proxies != {})*('\nProxies: ' + str(proxies)))
     if not isFound:
         acc += 1
         try:
-            req = requests.get("https://www.books-by-isbn.com/" + isbncand, timeout=10, headers=headers, proxies=proxies)
+            req = requests.get("https://www.books-by-isbn.com/" + isbncand, headers=headers, proxies=proxies, timeout=timeout)
             isFound = (req.status_code == 200) and ("No page yet on ISBN" not in req.text)
-        except requests.exceptions.RequestException:
-            print('\nWARNING: "requests.get()" raised an exception for ' + ustring + ', treated as not found')
+        except requests.exceptions.RequestException as e:
+            print('\nWARNING: "requests.get()" raised an exception for isbn:' + ustring + ', treated as not found\nException: ' + str(e) + (proxies != {})*('\nProxies: ' + str(proxies)))
     if verbose and isFound:
         print("Found via " + LocList[acc])
     return isFound
@@ -138,21 +140,21 @@ def isbn_has_content(ustring,verbose=False,headers={'User-Agent': 'Mozilla/5.0 (
 ##Attempts to recognize a PMID identifier from a string
 ##Returns the recognized PMID or an empty string if the format is wrong
 ##Online check (if set to True) via PubMed
-def fix_pmid(ustring,online_check=False,headers={},proxies={}):
+def fix_pmid(ustring,online_check=False,headers={},proxies={},timeout=None):
     if online_check:
-        return fix_identifier(ustring,'pmid',online_method=pmid_has_content,headers=headers,proxies=proxies)
+        return fix_identifier(ustring,'pmid',online_method=pmid_has_content,headers=headers,proxies=proxies,timeout=timeout)
     else:
         return fix_identifier(ustring,'pmid')
 
 ##Attempts to recognize a DOI identifier from a string
 ##Returns the recognized DOI or an empty string if the format is wrong
 ##Online check (if set to True) that there exists a handle at doi.org (check_what="handle") or that the handle leads to an actual web location (check_what="content")
-def fix_doi(ustring,online_check=False,check_what="handle",headers={},proxies={}):
+def fix_doi(ustring,online_check=False,check_what="handle",headers={},proxies={},timeout=None):
     if online_check:
         if check_what == "handle":
-            return fix_identifier(ustring,'doi',online_method=bibapi.doi_handle,headers=headers,proxies=proxies)
+            return fix_identifier(ustring,'doi',online_method=bibapi.doi_handle,headers=headers,proxies=proxies,timeout=timeout)
         elif check_what == "content":
-            return fix_identifier(ustring,'doi',online_method=doi_has_content,headers=headers,proxies=proxies)
+            return fix_identifier(ustring,'doi',online_method=doi_has_content,headers=headers,proxies=proxies,timeout=timeout)
         else:
             print("ERROR: in function \'fix_doi\': the value of parameter \'check_what\' should be either \'handle\' or \'content\'")
             return ""
@@ -162,25 +164,25 @@ def fix_doi(ustring,online_check=False,check_what="handle",headers={},proxies={}
 ##Attempts to recognize an ISBN identifier from a string
 ##Returns the recognized ISBN or an empty string if the format is wrong
 ##Online check (if set to True) via Google Books API, Open Library Book API, isbnsearch.org, www.books-by-isbn.com
-def fix_isbn(ustring,online_check=False,headers={},proxies={}):
+def fix_isbn(ustring,online_check=False,headers={},proxies={},timeout=None):
     if online_check:
-        return fix_identifier(ustring,'isbn',online_method=isbn_has_content,headers=headers,proxies=proxies)
+        return fix_identifier(ustring,'isbn',online_method=isbn_has_content,headers=headers,proxies=proxies,timeout=timeout)
     else:
         return fix_identifier(ustring,'isbn')
 
 ##Attempts to recognize an ISSN identifier from a string
 ##Returns the recognized ISSN or an empty string if the format is wrong
 ##Online check (if set to True) via portal.issn.org
-def fix_issn(ustring,online_check=False,headers={},proxies={}):
+def fix_issn(ustring,online_check=False,headers={},proxies={},timeout=None):
     if online_check:
-        return fix_identifier(ustring,'issn',online_method=issn_has_content,headers=headers,proxies=proxies)
+        return fix_identifier(ustring,'issn',online_method=issn_has_content,headers=headers,proxies=proxies,timeout=timeout)
     else:
         return fix_identifier(ustring,'issn')
 
 ##Attempts to recognize a Scopus EID identifier from a string
 ##Returns the recognized Scopus EID or an empty string if the format is wrong
 ##Online check (if set to True) via Scopus API (requires bibapi and an API key)
-def fix_scopusid(ustring,online_check=False,headers={},proxies={}):
+def fix_scopusid(ustring,online_check=False,headers={},proxies={},timeout=None):
     if online_check:
         return fix_identifier(ustring,'scopusid',online_method=scopusid_has_content,headers=headers,proxies=proxies)
     else:
@@ -189,9 +191,9 @@ def fix_scopusid(ustring,online_check=False,headers={},proxies={}):
 ##Attempts to recognize a Scopus EID identifier from a string
 ##Returns the recognized Scopus EID or an empty string if the format is wrong
 ##Online check (if set to True) via Web of Science API Expanded (requires bibapi and an API key)
-def fix_ut(ustring,online_check=False,headers={},proxies={}):
+def fix_ut(ustring,online_check=False,headers={},proxies={},timeout=None):
     if online_check:
-        return fix_identifier(ustring,'ut',online_method=ut_has_content,headers=headers,proxies=proxies)
+        return fix_identifier(ustring,'ut',online_method=ut_has_content,headers=headers,proxies=proxies,timeout=timeout)
     else:
         return fix_identifier(ustring,'ut')
 

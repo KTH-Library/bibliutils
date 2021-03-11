@@ -160,5 +160,6 @@ print(Result13)
 
 ## bibapi.get_dates_sciencedirect: a more complex function using the BibAPI class to call the ScienceDirect API and fetch the "Received date" and "Accepted date"
 #N.B. For the function to work, terms for data mining must have been accepted during your Scopus API key creation
+#WARNING: this doesn't seem to work anymore?
 Result14 = bibapi.get_dates_sciencedirect(idtype='pubmed_id', idval='24662697')
 print(Result14)

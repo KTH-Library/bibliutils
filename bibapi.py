@@ -27,10 +27,11 @@ class BibAPI:
      - doi.org
      - elsevier (scopus)
      - the lens
+     - libris
      - ror
      - unpaywall
     """
-    def __init__(self, service=None, headers={}, proxies={}, method=requests.get, apiname=""):
+    def __init__(self, service=None, headers={}, proxies={}, timeout=None, method=requests.get, apiname=""):
         self.apiname = apiname
         if service == 'unpaywall':
             self.base_url = 'https://api.unpaywall.org/v2/'
@@ -51,6 +52,17 @@ class BibAPI:
                                 'index',
                                 'pretty',
                                 'type']
+        elif service == 'libris':
+            self.base_url = 'https://libris.kb.se/xsearch'
+            self.doc_url = 'http://librishelp.libris.kb.se/help/xsearch_eng.jsp'
+            self.options = ['database',
+                                'format',
+                                'format_level',
+                                'holdings',
+                                'n',
+                                'order',
+                                'query',
+                                'start']
         elif service == 'elsevier':
             #other apinames: Embase, SUSHI
             if not apiname:
@@ -164,6 +176,7 @@ class BibAPI:
         self.service = service
         self.headers = headers
         self.proxies = proxies
+        self.timeout = timeout
         self.method = method
         self.lasturl = None
         self.lastresponse = None
@@ -195,14 +208,18 @@ class BibAPI:
         self.headers = headers
     def setProxies(self, proxies):
         self.proxies = proxies
+    def setTimeout(self, timeout):
+        self.timeout = timeout
     def setMethod(self, method):
         self.method = method
-    def call(self, path, params={}, headers={}, proxies={}, method=None, casesensitive=False):
+    def call(self, path, params={}, headers={}, proxies={}, timeout=None, method=None, casesensitive=False):
         #self.service and self.apiname should already be set
         if not headers:
             headers = self.headers
         if not proxies:
             proxies = self.proxies
+        if not timeout:
+            timeout = self.timeout
         if not method:
             method = self.method
         url = self.base_url + path.lower() + '?'
@@ -221,19 +238,19 @@ class BibAPI:
         #remove extra '&' (or '?' if there are no parameters)
         url = url[:-1]
         self.lasturl = url
-        self.lastresponse = method(url, headers=headers, proxies=proxies)
+        self.lastresponse = method(url, headers=headers, proxies=proxies, timeout=timeout)
         try:
             return self.lastresponse.json()
-        except:
+        except ValueError:
             return self.lastresponse.text
     ## Service-specific methods
-    def altmetric(self, path, params={}, headers={}, proxies={}, method=None):
+    def altmetric(self, path, params={}, headers={}, proxies={}, timeout=None, method=None):
         global ALTMETRICS_API_KEY
         self.__init__(service='altmetric')
         if ALTMETRICS_API_KEY and "key" not in map(str.lower, params.keys()):
             params["key"] = ALTMETRICS_API_KEY
-        return self.call(path=path, params=params, headers=headers, proxies=proxies, method=method)
-    def clarivate(self, path="", params={}, headers={}, proxies={}, method=None, apiname="wos"):
+        return self.call(path=path, params=params, headers=headers, proxies=proxies, timeout=timeout, method=method)
+    def clarivate(self, path="", params={}, headers={}, proxies={}, timeout=None, method=None, apiname="wos"):
         global WOS_KEY
         self.__init__(service='clarivate', apiname=apiname)
         if WOS_KEY and "x-apikey" not in map(str.lower, headers.keys()):
@@ -246,11 +263,11 @@ class BibAPI:
         for P in DefaultParams:
             if P not in params.keys():
                 params[P] = DefaultParams[P]
-        return self.call(path=path, params=params, headers=headers, proxies=proxies, method=method, casesensitive=True)
-    def doi(self, path, params={}, headers={}, proxies={}, method=None):
+        return self.call(path=path, params=params, headers=headers, proxies=proxies, timeout=timeout, method=method, casesensitive=True)
+    def doi(self, path, params={}, headers={}, proxies={}, timeout=None, method=None):
         self.__init__(service='doi')
-        return self.call(path=path, params=params, headers=headers, proxies=proxies, method=method)
-    def elsevier(self, path, params={}, headers={}, proxies={}, method=None, apiname='scopus'):
+        return self.call(path=path, params=params, headers=headers, proxies=proxies, timeout=timeout, method=method)
+    def elsevier(self, path, params={}, headers={}, proxies={}, timeout=None, method=None, apiname='scopus'):
         global SCOPUS_KEY, SCOPUS_TOKEN
         self.__init__(service='elsevier', apiname=apiname)
         if SCOPUS_KEY and "apikey" not in map(str.lower, params.keys()):
@@ -259,22 +276,27 @@ class BibAPI:
                 params["insttoken"] = SCOPUS_TOKEN
         if "httpaccept" not in map(str.lower, params.keys()):
             params["httpAccept"] = "application/json"
-        return self.call(path=path, params=params, headers=headers, proxies=proxies, method=method)
-    def lens(self, path, params={}, headers={}, proxies={}, method=None):
+        return self.call(path=path, params=params, headers=headers, proxies=proxies, timeout=timeout, method=method)
+    def lens(self, path, params={}, headers={}, proxies={}, timeout=None, method=None):
         global LENS_TOKEN
         self.__init__(service='lens')
         if LENS_TOKEN and "token" not in map(str.lower, params.keys()):
             params["token"] = LENS_TOKEN
-        return self.call(path=path, params=params, headers=headers, proxies=proxies, method=method)
-    def ror(self, path="organizations", params={}, headers={}, proxies={}, method=None):
+        return self.call(path=path, params=params, headers=headers, proxies=proxies, timeout=timeout, method=method)
+    def libris(self, path="", params = {}, headers={}, proxies={}, timeout=None, method=None):
+        self.__init__(service='libris')
+        if "format" not in params.keys():
+            params["format"] = "json"
+        return self.call(path=path, params=params, headers=headers, proxies=proxies, timeout=timeout, method=method)
+    def ror(self, path="organizations", params={}, headers={}, proxies={}, timeout=None, method=None):
         self.__init__(service='ror')
-        return self.call(path=path, params=params, headers=headers, proxies=proxies, method=method)
-    def unpaywall(self, path, params={}, headers={}, proxies={}, method=None):
+        return self.call(path=path, params=params, headers=headers, proxies=proxies, timeout=timeout, method=method)
+    def unpaywall(self, path, params={}, headers={}, proxies={}, timeout=None, method=None):
         global UNPAYWALL_EMAIL
         if UNPAYWALL_EMAIL and "email" not in map(str.lower, params.keys()):
                 params = {"email": UNPAYWALL_EMAIL}
         self.__init__(service='unpaywall')
-        return self.call(path=path, params=params, headers=headers, proxies=proxies, method=method)
+        return self.call(path=path, params=params, headers=headers, proxies=proxies, timeout=timeout, method=method)
 
 
 
@@ -287,22 +309,37 @@ def ror_affiliation(affil):
 def ror_id(affil):
     return safe_access(ror_affiliation(affil), ["items",0,"organization","id"])
 
-def scopus_search(query,headers={},proxies={}):
+def scopus_search(query,headers={},proxies={},timeout=None):
     TheClient = BibAPI()
-    return TheClient.elsevier(path='search/scopus', params={"query": query}, apiname='scopus', headers=headers, proxies=proxies)
+    return TheClient.elsevier(path='search/scopus', params={"query": query}, apiname='scopus', headers=headers, proxies=proxies, timeout=timeout)
 
-def wos_search(query,databaseid="WOK",headers={},proxies={}):
+def wos_search(query,databaseid="WOK",headers={},proxies={},timeout=None):
     TheClient = BibAPI()
-    return TheClient.clarivate(params={"usrQuery": query, "databaseId": databaseid}, apiname='wos', headers=headers, proxies=proxies)
+    return TheClient.clarivate(params={"usrQuery": query, "databaseId": databaseid}, apiname='wos', headers=headers, proxies=proxies, timeout=timeout)
 
-def wos_search_params(path="",params={},headers={},proxies={}):
+def wos_search_params(path="",params={},headers={},proxies={},timeout=None):
     TheClient = BibAPI()
-    return TheClient.clarivate(path=path,params=params, apiname='wos', headers=headers, proxies=proxies)
+    return TheClient.clarivate(path=path,params=params, apiname='wos', headers=headers, proxies=proxies, timeout=timeout)
 
-def doi_handle(doi,headers={},proxies={}):
+def doi_handle(doi,headers={},proxies={},timeout=None):
     TheClient = BibAPI()
-    res = TheClient.doi(path=doi, params={"type": "URL"}, headers=headers, proxies=proxies)
+    res = TheClient.doi(path=doi, params={"type": "URL"}, headers=headers, proxies=proxies, timeout=timeout)
     return str(safe_access(res, ["values", 0, "data","value"], ""))
+
+def altmetric_score(pub):
+    TheClient = BibAPI()
+    pubtype = pub.keys()[0]
+    res = TheClient.altmetric(pubtype+'/'+pub[pubtype])
+    return safe_access(res,["score"],0)
+
+def wos_citations(ut):
+    TheClient = BibAPI()
+    res = TheClient.clarivate(params={"usrQuery": "UT="+ut, "databaseId": "WOS"}, apiname='wos')
+    return safe_access(res, ["Data","Records","records","REC",0,"dynamic_data","citation_related","tc_list","silo_tc","local_count"],0)
+
+def libris_isbn_search(isbn,headers={},proxies={},timeout=None):
+    TheClient = BibAPI()
+    return TheClient.libris(params={"query": "ISBN:"+isbn}, headers=headers, proxies=proxies, timeout=timeout)
 
 ## Scopus API calls
 
@@ -356,7 +393,6 @@ def get_dates_sciencedirect(idtype,idval,apikey="",apitoken=""):
                       'xsi': "http://www.w3.org/2001/XMLSchema-instance"}
     root = ET.fromstring(XMLString)
     result = {}
-    dateTypes = ["date-received",]
     try:
         DateReceived = root.find('ns0:originalText/ns3:doc/ns3:serial-item/ns5:article/ns5:head/ns6:date-received', namespaces).attrib
         result["date-received"] = DateReceived

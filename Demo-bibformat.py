@@ -75,7 +75,7 @@ bibformat.fix_pmid("203957354093259284205", online_check=True)
 
 ### ISBN ###
 #Same principle as above
-#ISBN-10 and ISBN-13 are recognized with or without dashes
+#ISBN-10 and ISBN-13 are recognized with or without dashes and spaces
 #NB: Check digit not verified in the format check
 bibformat.fix_isbn("9780141040349")
 bibformat.fix_isbn("978-0-14-104034-9")
@@ -90,7 +90,7 @@ bibformat.isbn_has_content("978-0-14-104034-9", verbose=True)
 req2 = requests.get('http://libris.kb.se/bib/14701172')
 bibformat.fix_isbn(req2.text)
 #If are several ISBN numbers in the text, only the first one is returned
-req3 = requests.get('https://www.amazon.com/Interactive-Computer-aided-Expressive-Music-Performance/dp/9175010313', headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.0; WOW64; rv:24.0) Gecko/20100101 Firefox/24.0'})
+req3 = requests.get('https://www.amazon.com/dp/9175010313', headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.0; WOW64; rv:24.0) Gecko/20100101 Firefox/24.0'})
 bibformat.fix_isbn(req3.text)
 
 
