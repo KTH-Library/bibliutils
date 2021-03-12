@@ -99,7 +99,11 @@ def isbn_has_content(ustring,verbose=False,headers={'User-Agent': 'Mozilla/5.0 (
     isbncand = ustring.replace('-','').replace(' ','')
     LocList = ["Libris","Google Books API","Open Library Book API","ISBN search","Books by ISBN"]
     acc = 0
-    isFound = (bibapi.safe_access(bibapi.libris_isbn_search(isbncand, headers=headers, proxies=proxies, timeout=timeout),["xsearch","records"],0) > 0)
+    try:
+        isFound = (bibapi.safe_access(bibapi.libris_isbn_search(isbncand, headers=headers, proxies=proxies, timeout=timeout),["xsearch","records"],0) > 0)
+    except requests.exceptions.RequestException as e:
+        print('\nWARNING: "requests.get()" raised an exception for isbn:' + ustring + ', treated as not found\nException: ' + str(e) + (proxies != {})*('\nProxies: ' + str(proxies)))
+        isFound = False
     if not isFound:
         acc += 1
         try:
