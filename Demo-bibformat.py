@@ -87,7 +87,7 @@ bibformat.fix_isbn("978-0-14-104034-0")
 bibformat.fix_isbn("3-86717-055-0")
 bibformat.fix_isbn("978-0-14-104034-0", checksum=False) #check digit not verified
 bibformat.fix_isbn("3-86717-055-0", checksum=False) #check digit not verified
-#Option to verify if a corresponding book can be found (uses in sequence: Google Books API, Open Library Book API, isbnsearch.org, www.books-by-isbn.com)
+#Option to verify if a corresponding book can be found (uses in sequence: LIBRIS, Google Books API, Open Library Book API, isbnsearch.org, www.books-by-isbn.com)
 bibformat.fix_isbn("978-0-14-104034-9", online_check=True)
 bibformat.fix_isbn("012-3-45-678901-2")
 bibformat.fix_isbn("012-3-45-678901-2", online_check=True)
