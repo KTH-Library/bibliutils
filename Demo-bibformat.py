@@ -33,8 +33,8 @@ bibformat.fix_doi("Random_string!?")
 bibformat.fix_doi("10.1364/JOSA.18.000337")
 bibformat.fix_doi("10.1002/(SICI)1520-6823(1997)5:4<206::AID-ROI6>3.0.CO;2-1")
 #Removes the bad parts in case of partially right format 
-bibformat.fix_doi("DOI: 10.1364/JOSA.18.000337")
 bibformat.fix_doi("https://dx.doi.org/10.1364/JOSA.18.000337")
+bibformat.fix_doi("The DOI 10.1364/JOSA.18.000337 can be extracted from this string")
 #Can be used to find a DOI on a webpage
 req1 = requests.get('https://kth.diva-portal.org/smash/record.jsf?pid=diva2:1414460')
 bibformat.fix_doi(req1.text)
@@ -54,10 +54,12 @@ bibformat.doi_is_from_isbn("10.1057/978-1-137-54575-6")
 
 ### ISSN ###
 #Same principle as above
-#NB: Check digit not verified in the format check
 bibformat.fix_issn("Random_string!?")
 bibformat.fix_issn("14775751") #format without dash not accepted
 bibformat.fix_issn("1477-5751")
+#Check digit verified by default in the format check (wrong in the example below)
+bibformat.fix_issn("1477-5752")
+bibformat.fix_issn("1477-5752", checksum=False) #check digit not verified
 #Option to verify that the ISSN is registered on portal.issn.org
 bibformat.fix_issn("1477-5751", online_check=True)
 bibformat.fix_issn("0000-0000")
@@ -76,10 +78,15 @@ bibformat.fix_pmid("203957354093259284205", online_check=True)
 ### ISBN ###
 #Same principle as above
 #ISBN-10 and ISBN-13 are recognized with or without dashes and spaces
-#NB: Check digit not verified in the format check
+#NB: Check digit verified by default in the format check
 bibformat.fix_isbn("9780141040349")
 bibformat.fix_isbn("978-0-14-104034-9")
 bibformat.fix_isbn("3-86717-055-X")
+#Check digit verified by default in the format check (wrong in the examples below)
+bibformat.fix_isbn("978-0-14-104034-0")
+bibformat.fix_isbn("3-86717-055-0")
+bibformat.fix_isbn("978-0-14-104034-0", checksum=False) #check digit not verified
+bibformat.fix_isbn("3-86717-055-0", checksum=False) #check digit not verified
 #Option to verify if a corresponding book can be found (uses in sequence: Google Books API, Open Library Book API, isbnsearch.org, www.books-by-isbn.com)
 bibformat.fix_isbn("978-0-14-104034-9", online_check=True)
 bibformat.fix_isbn("012-3-45-678901-2")
@@ -117,5 +124,5 @@ bibformat.fix_kthid("u14h36o6") #right
 bibformat.fix_kthid("ul4h36o6") #wrong
 
 ### Via a regular expression ###
-bibformat.fix_identifier("For any question about this program, write to dubus@kth.se", regexp=r'[A-z]+@[A-z]+.[A-z]+')
+bibformat.fix_identifier("For any question about this program, write to dubus@kth.se and expect a swift answer.", regexp=r'[A-z]+@[A-z]+.[A-z]+')
 
