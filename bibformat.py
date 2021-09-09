@@ -51,7 +51,7 @@ def fix_identifier(ustring,idtype=None,online_method=None,checksum=True,regexp=N
 
 
 ### ONLINE CHECKS ###
-import bibapi_v2
+import bibapi
 import requests
 import json
 
@@ -89,13 +89,13 @@ def issn_has_content(ustring,headers={},proxies={},timeout=None):
     return identifier_has_location(ustring,idtype='issn',headers=headers,proxies=proxies,timeout=timeout)
 
 def scopusid_has_content(ustring,headers={},proxies={},timeout=None):
-    rec = bibapi_v2.scopus_search("EID(" + ustring + ")",headers=headers,proxies=proxies,timeout=timeout)
-    nres = int(bibapi_v2.safe_access(rec,['search-results','opensearch:totalResults'],'0'))
+    rec = bibapi.scopus_search("EID(" + ustring + ")",headers=headers,proxies=proxies,timeout=timeout)
+    nres = int(bibapi.safe_access(rec,['search-results','opensearch:totalResults'],'0'))
     return nres > 0
 
 def ut_has_content(ustring,headers={},proxies={},timeout=None):
-    rec = bibapi_v2.wos_search("UT=" + ustring,headers=headers,proxies=proxies,timeout=timeout)
-    nres = bibapi_v2.safe_access(rec,['QueryResult','RecordsFound'],0)
+    rec = bibapi.wos_search("UT=" + ustring,headers=headers,proxies=proxies,timeout=timeout)
+    nres = bibapi.safe_access(rec,['QueryResult','RecordsFound'],0)
     return nres > 0
 
 def isbn_has_content(ustring,verbose=False,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.0; WOW64; rv:24.0) Gecko/20100101 Firefox/24.0'},proxies={},timeout=None):
@@ -106,7 +106,7 @@ def isbn_has_content(ustring,verbose=False,headers={'User-Agent': 'Mozilla/5.0 (
     LocList = ["Libris","Google Books API","Open Library Book API","ISBN search","Books by ISBN"]
     acc = 0
     try:
-        isFound = (bibapi_v2.safe_access(bibapi_v2.libris_isbn_search(isbncand, headers=headers, proxies=proxies, timeout=timeout),["xsearch","records"],0) > 0)
+        isFound = (bibapi.safe_access(bibapi.libris_isbn_search(isbncand, headers=headers, proxies=proxies, timeout=timeout),["xsearch","records"],0) > 0)
     except requests.exceptions.RequestException as e:
         print('\nWARNING: "requests.get()" raised an exception for isbn:' + ustring + ', treated as not found\nException: ' + str(e) + (proxies != {})*('\nProxies: ' + str(proxies)))
         isFound = False
@@ -162,7 +162,7 @@ def fix_pmid(ustring,online_check=False,headers={},proxies={},timeout=None):
 def fix_doi(ustring,online_check=False,check_what="handle",headers={},proxies={},timeout=None):
     if online_check:
         if check_what == "handle":
-            return fix_identifier(ustring,'doi',online_method=bibapi_v2.doi_handle,headers=headers,proxies=proxies,timeout=timeout)
+            return fix_identifier(ustring,'doi',online_method=bibapi.doi_handle,headers=headers,proxies=proxies,timeout=timeout)
         elif check_what == "content":
             return fix_identifier(ustring,'doi',online_method=doi_has_content,headers=headers,proxies=proxies,timeout=timeout)
         else:
