@@ -24,6 +24,7 @@ class BibAPI:
     API calls for:
      - altmetric
      - clarivate (web of science)
+     - doaj
      - doi.org
      - elsevier (scopus)
      - the lens
@@ -43,6 +44,21 @@ class BibAPI:
             self.options = ['affiliation',
                                 'filter',
                                 'page']
+        elif service == 'doaj':
+            self.base_url = 'https://doaj.org/api/v2/'
+            self.doc_url = 'https://doaj.org/api/v2/docs'
+            self.options = ['',
+                                'api_key',
+                                'application_id',
+                                'application_ids',
+                                'application_json',
+                                'article_id',
+                                'article_ids',
+                                'article_json',
+                                'journal_id',
+                                'page',
+                                'pageSize',
+                                'sort']
         elif service == 'doi':
             self.base_url = 'https://doi.org/api/handles/'
             self.doc_url = 'https://www.doi.org/factsheets/DOIProxy.html#rest-api'
@@ -182,9 +198,11 @@ class BibAPI:
         self.lastresponse = None
         self.supported = {"altmetric": [""],
                               "clarivate": ["wos","woslite"],
+                              "doaj": [""],
                               "doi": [""],
                               "elsevier": ["scopus","sciencedirect"],
                               "lens": [""],
+                              "libris": [""],
                               "ror": [""],
                               "unpaywall": [""]}
     def doc(self, service=None, apiname=""):
@@ -222,14 +240,15 @@ class BibAPI:
             timeout = self.timeout
         if not method:
             method = self.method
-        url = self.base_url + path.lower() + '?'
         if casesensitive:
+            url = self.base_url + path + '?'
             for o in params.keys():
                 if o in self.options:
                     url += o + "=" + params[o] + '&'
                 else:
                     print("Unknown option for " + self.service + " API " + self.apiname + ": " + o)
         else:
+            url = self.base_url + path.lower() + '?'
             for o in params.keys():
                 if o.lower() in self.options:
                     url += o + "=" + params[o] + '&'
@@ -263,6 +282,9 @@ class BibAPI:
         for P in DefaultParams:
             if P not in params.keys():
                 params[P] = DefaultParams[P]
+        return self.call(path=path, params=params, headers=headers, proxies=proxies, timeout=timeout, method=method, casesensitive=True)
+    def doaj(self, path, params={}, headers={}, proxies={}, timeout=None, method=None):
+        self.__init__(service='doaj')
         return self.call(path=path, params=params, headers=headers, proxies=proxies, timeout=timeout, method=method, casesensitive=True)
     def doi(self, path, params={}, headers={}, proxies={}, timeout=None, method=None):
         self.__init__(service='doi')
@@ -341,6 +363,17 @@ def libris_isbn_search(isbn,headers={},proxies={},timeout=None):
     TheClient = BibAPI()
     return TheClient.libris(params={"query": "ISBN:"+isbn}, headers=headers, proxies=proxies, timeout=timeout)
 
+def journal_has_apc(issn):
+    TheClient = BibAPI()
+    rec = TheClient.doaj(path="search/journals/issn%3A"+issn)
+    res = safe_access(rec,["results",0,"bibjson","apc","has_apc"],"unknown")
+    if res == True:
+        return "yes"
+    elif res == False:
+        return "no"
+    else:
+        return res
+    
 ## Scopus API calls
 
 #Returns the list of groups of authors ("collaborations") of a given scopus record
