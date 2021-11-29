@@ -1,0 +1,8 @@
+version: '3.7'
+
+services:
+  bibliutilsapi:
+    image: kthb/bibliutils
+    ports:
+      - "8080:8080"
+
