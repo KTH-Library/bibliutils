@@ -1,5 +1,12 @@
 # FastAPI example
 
+An example API-app using the FastAPI framework.
+
+Some links with info about FastAPI versus Flask and other REST API frameworks:
+
+- [Simplest stack to build pyweb apps with in 2021?](https://news.ycombinator.com/item?id=29311761)
+- [Flask versus FastAPI](https://christophergs.com/python/2021/06/16/python-flask-fastapi/)
+
 ## Building and running
 
 To build the docker image with the FastAPI application locally, use:
