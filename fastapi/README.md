@@ -10,9 +10,14 @@ To start the services locally, use:
 
 		make up
 
-One the services are up, navigate to "http://localhost:8080", for example:
+Once the services are up, navigate to "http://localhost:8080", for example:
 
 		firefox http://localhost:8080/docs &
+
+		# or use curl to call one of the endpoints directly
+		curl -X 'GET' \
+  			'http://localhost:8080/validate/u1234567' \
+  			-H 'accept: application/json'
 
 To view log files, use:
 
