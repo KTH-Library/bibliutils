@@ -17,7 +17,7 @@ SCOPUS_TOKEN = os.getenv('SCOPUS_TOKEN')
 LENS_TOKEN = os.getenv('LENS_TOKEN')
 ALTMETRICS_API_KEY = os.getenv('ALTMETRICS_API_KEY')
 WOS_KEY = os.getenv('WOS_KEY')
-    
+
 
 class BibAPI:
     """
@@ -247,6 +247,7 @@ class BibAPI:
                     url += o + "=" + params[o] + '&'
                 else:
                     print("Unknown option for " + self.service + " API " + self.apiname + ": " + o)
+                    url += o + "=" + params[o] + '&'
         else:
             url = self.base_url + path.lower() + '?'
             for o in params.keys():
@@ -254,13 +255,14 @@ class BibAPI:
                     url += o + "=" + params[o] + '&'
                 else:
                     print("Unknown option for " + self.service + " API " + self.apiname + ": " + o)
+                    url += o + "=" + params[o] + '&'
         #remove extra '&' (or '?' if there are no parameters)
         url = url[:-1]
         self.lasturl = url
         self.lastresponse = method(url, headers=headers, proxies=proxies, timeout=timeout)
         try:
             return self.lastresponse.json()
-        except ValueError:
+        except:
             return self.lastresponse.text
     ## Service-specific methods
     def altmetric(self, path, params={}, headers={}, proxies={}, timeout=None, method=None):
@@ -269,7 +271,7 @@ class BibAPI:
         if ALTMETRICS_API_KEY and "key" not in map(str.lower, params.keys()):
             params["key"] = ALTMETRICS_API_KEY
         return self.call(path=path, params=params, headers=headers, proxies=proxies, timeout=timeout, method=method)
-    def clarivate(self, path="", params={}, headers={}, proxies={}, timeout=None, method=None, apiname="wos"):
+    def clarivate(self, path="", params={}, headers={}, proxies={}, timeout=None, method=None, apiname="woslite"):
         global WOS_KEY
         self.__init__(service='clarivate', apiname=apiname)
         if WOS_KEY and "x-apikey" not in map(str.lower, headers.keys()):
@@ -331,22 +333,28 @@ def ror_affiliation(affil):
 def ror_id(affil):
     return safe_access(ror_affiliation(affil), ["items",0,"organization","id"])
 
-def scopus_search(query,headers={},proxies={},timeout=None):
+def scopus_search(query,extraparams={},headers={},proxies={},timeout=None):
     TheClient = BibAPI()
-    return TheClient.elsevier(path='search/scopus', params={"query": query}, apiname='scopus', headers=headers, proxies=proxies, timeout=timeout)
+    return TheClient.elsevier(path='search/scopus', params=dict({"query": query},**extraparams), apiname='scopus', headers=headers, proxies=proxies, timeout=timeout)
+
+def scopus_affiliations(ID,headers={},proxies={},timeout=None):
+    #WARNING: ID is the "Scopus ID" as defined by Scopus, not EID (that we usually call Scopus ID)!
+    TheClient = BibAPI()
+    res = TheClient.elsevier(path='abstract/scopus_id/'+ID, params={"field": "author,affiliation", "httpAccept": "application/json"}, apiname='scopus', headers=headers, proxies=proxies, timeout=timeout)
+    return safe_access(res,["abstracts-retrieval-response","affiliation"])
 
 def wos_search(query,databaseid="WOK",headers={},proxies={},timeout=None):
     TheClient = BibAPI()
-    return TheClient.clarivate(params={"usrQuery": query, "databaseId": databaseid}, apiname='wos', headers=headers, proxies=proxies, timeout=timeout)
+    return TheClient.clarivate(params={"usrQuery": query, "databaseId": databaseid}, headers=headers, proxies=proxies, timeout=timeout)
 
 def wos_search_params(path="",params={},headers={},proxies={},timeout=None):
     TheClient = BibAPI()
-    return TheClient.clarivate(path=path,params=params, apiname='wos', headers=headers, proxies=proxies, timeout=timeout)
+    return TheClient.clarivate(path=path,params=params, headers=headers, proxies=proxies, timeout=timeout)
 
 def doi_handle(doi,headers={},proxies={},timeout=None):
     TheClient = BibAPI()
     res = TheClient.doi(path=doi, params={"type": "URL"}, headers=headers, proxies=proxies, timeout=timeout)
-    return str(safe_access(res, ["values", 0, "data","value"], ""))
+    return str(safe_access(res, ["values", 0, "data","value"],""))
 
 def altmetric_score(pub):
     TheClient = BibAPI()
@@ -363,17 +371,24 @@ def libris_isbn_search(isbn,headers={},proxies={},timeout=None):
     TheClient = BibAPI()
     return TheClient.libris(params={"query": "ISBN:"+isbn}, headers=headers, proxies=proxies, timeout=timeout)
 
-def journal_has_apc(issn):
+def journal_has_apc(invar):
     TheClient = BibAPI()
-    rec = TheClient.doaj(path="search/journals/issn%3A"+issn)
-    res = safe_access(rec,["results",0,"bibjson","apc","has_apc"],"unknown")
+    rec = {}
+    if "issn" in invar.keys():
+        rec = safe_access(TheClient.doaj(path="search/journals/issn%3A"+invar["issn"]),["results",0],{})
+    elif "title" in invar.keys():
+        reclist = TheClient.doaj(path="search/journals/title%3A"+invar["title"].replace(' ','%20'))
+        for jrec in safe_access(reclist,["results"],[]):
+            if invar == safe_access(jrec,["bibjson","title"],""):
+                rec = jrec
+    res = safe_access(rec,["bibjson","apc","has_apc"],"unknown")
     if res == True:
         return "yes"
     elif res == False:
         return "no"
     else:
         return res
-    
+
 ## Scopus API calls
 
 #Returns the list of groups of authors ("collaborations") of a given scopus record
