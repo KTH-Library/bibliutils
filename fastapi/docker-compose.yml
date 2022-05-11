@@ -1,8 +1,10 @@
 version: '3.7'
 
 services:
-  bibliutilsapi:
+  fastapi:
     image: kthb/bibliutils
     ports:
-      - "8080:8080"
+      - "8080:80"
+    volumes:
+      - ./app:/app/app
 

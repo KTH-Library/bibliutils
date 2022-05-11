@@ -7,6 +7,10 @@ Some links with info about FastAPI versus Flask and other REST API frameworks:
 - [Simplest stack to build pyweb apps with in 2021?](https://news.ycombinator.com/item?id=29311761)
 - [Flask versus FastAPI](https://christophergs.com/python/2021/06/16/python-flask-fastapi/)
 
+And a nice presentation from DockerCon 2022 showing usage of FastAPI within containers:
+
+- https://docker.events.cube365.net/dockercon/2022/content/Videos/FznJCYerdb9Za3W9Q
+
 ## Building and running
 
 To build the docker image with the FastAPI application locally, use:
@@ -34,4 +38,10 @@ To remove and clean up services use:
 
 		docker-compose down
 
+
+## Hot reload
+
+To make changes to your API iteratively (when using Dockerfile.devel and hot reload), first start the service with "make up".
+
+Then edit the app/main.py file and refresh to see results from changes in your browser at "http://localhost:8080/docs" (or by issuing curl requests).
 
