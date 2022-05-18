@@ -358,9 +358,14 @@ def doi_handle(doi,headers={},proxies={},timeout=None):
 
 def altmetric_score(pub):
     TheClient = BibAPI()
-    pubtype = pub.keys()[0]
+    pubtype = next(iter(pub))
     res = TheClient.altmetric(pubtype+'/'+pub[pubtype])
     return safe_access(res,["score"],0)
+
+def altmetric_search(pub):
+    TheClient = BibAPI()
+    pubtype = next(iter(pub))
+    return TheClient.altmetric(pubtype+'/'+pub[pubtype])
 
 def wos_citations(ut):
     TheClient = BibAPI()
