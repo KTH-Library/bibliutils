@@ -32,7 +32,7 @@ def fix_identifier(ustring,idtype=None,online_method=None,checksum=True,regexp=N
     elif idtype.lower() == 'scopusid':
         regexp = r'2-s2\.0-\d{10,11}'
     elif idtype.lower() == 'ut' or idtype.lower() == 'isi':
-        regexp = r'A19\d{2}[A-Z\d]{5}\d{5}|000\d{12}'
+        regexp = r'A19\d{2}[A-Z\d]{5}\d{5}|00\d{13}'
     else:
         print("Unknown identifier type: " + idtype)
         return ""
