@@ -231,8 +231,8 @@ def fix_scopusid(ustring,online_check=False,headers={},proxies={},timeout=None):
     else:
         return fix_identifier(ustring,'scopusid')
 
-##Attempts to recognize a Scopus EID identifier from a string
-##Returns the recognized Scopus EID or an empty string if the format is wrong
+##Attempts to recognize a Web of Science identifier (UT number) from a string
+##Returns the recognized UT number  or an empty string if the format is wrong
 ##Online check (if set to True) via Web of Science API Expanded (requires bibapi and an API key)
 def fix_ut(ustring,online_check=False,headers={},proxies={},timeout=None):
     if online_check:
@@ -260,3 +260,5 @@ def fix_kthid(ustring,idtype="person"):
         typecode = '2'
     kthid_regexp = r'u' + typecode + '[a-z0-9]{6}'
     return fix_identifier(ustring,regexp=kthid_regexp)
+
+
