@@ -261,4 +261,9 @@ def fix_kthid(ustring,idtype="person"):
     kthid_regexp = r'u' + typecode + '[a-z0-9]{6}'
     return fix_identifier(ustring,regexp=kthid_regexp)
 
-
+##Attempts to recognize a RORID identifier from a string
+##Returns the recognized RORID or an empty string if the format is wrong
+def fix_rorid(ustring):
+    #rorid_regexp = r'\b(?=.*[0-9])(?=.*[a-z])([0-9a-z]){9}\b'
+    rorid_regexp = r'\b([0-9a-z]){9}\b' #It is actually allowed to have all characters of one type (digit or letter)
+    return fix_identifier(ustring,regexp=rorid_regexp)
