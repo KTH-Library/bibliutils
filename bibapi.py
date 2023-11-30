@@ -8,7 +8,7 @@ import requests
 
 #For other functions
 from xml.etree import cElementTree as ET
-
+import time
 
 # Get secret keys, tokens and parameters stored as environment variables
 UNPAYWALL_EMAIL = os.getenv('UNPAYWALL_EMAIL')
@@ -17,7 +17,10 @@ SCOPUS_TOKEN = os.getenv('SCOPUS_TOKEN')
 LENS_TOKEN = os.getenv('LENS_TOKEN')
 ALTMETRICS_API_KEY = os.getenv('ALTMETRICS_API_KEY')
 WOS_KEY = os.getenv('WOS_KEY')
+OVERTON_KEY = os.getenv('OVERTON_KEY')
+    
 
+#- ncbi (pubmed)
 
 class BibAPI:
     """
@@ -29,6 +32,9 @@ class BibAPI:
      - elsevier (scopus)
      - the lens
      - libris
+     - openalex
+     - openapc
+     - overton
      - ror
      - unpaywall
     """
@@ -79,6 +85,36 @@ class BibAPI:
                                 'order',
                                 'query',
                                 'start']
+        elif service == 'overton':
+            self.base_url = 'https://app.overton.io/'
+            self.doc_url = 'https://help.overton.io/article/using-the-overton-api'
+            self.options = ['api_key',
+                                'format',
+                                'identifiers',
+                                'open_linked_institution_authors',
+                                'plain_dois_cited',
+                                'query',
+                                'sort']
+        elif service == "openalex":
+            self.base_url = 'https://api.openalex.org/'
+            self.doc_url = 'https://docs.openalex.org/api'
+            self.options = ['cursor',
+                                'filter',
+                                'group_by',
+                                'mailto',
+                                'page',
+                                'per_page',
+                                'per-page',
+                                'search',
+                                'sort']
+        elif service == "openapc":
+            self.base_url = "https://olap.openapc.net/"
+            self.doc_url = "https://github.com/OpenAPC/openapc-olap/blob/master/HOWTO.md"
+            self.options = ['cut',
+                                'drilldown',
+                                'order',
+                                'page',
+                                'pagesize']
         elif service == 'elsevier':
             #other apinames: Embase, SUSHI
             if not apiname:
@@ -100,8 +136,10 @@ class BibAPI:
                                     'pubmed_id',
                                     'query',
                                     'ref',
+                                    'refcount',
                                     'scopus_id',
                                     'start',
+                                    'startref',
                                     'subj',
                                     'subjcode',
                                     'view',
@@ -152,7 +190,7 @@ class BibAPI:
                 print("Please provide the name of the chosen API for Web of Science")
             elif apiname == "wos":
                 self.base_url = 'https://wos-api.clarivate.com/api/wos/'
-                self.doc_url = '- URL: https://clarivate.com/webofsciencegroup/solutions/xml-and-apis/\n- Swagger UI: https://api.clarivate.com/swagger-ui/?apikey= + [api_key] + &url=https://developer.clarivate.com/apis/wos/swagger?forUser%3D + [user_id]\n    To find your user_id: 1) go to https://developer.clarivate.com/apis and log in 2) choose whatever API you have access to and click on "Information" 3) click on "View Swagger definition" at the bottom 4) your user_id is at the end of the url'
+                self.doc_url = '- URL: https://clarivate.com/webofsciencegroup/solutions/xml-and-apis/\n- Swagger UI: https://api.clarivate.com/swagger-ui/?apikey= + [api_key] + &url=https://developer.clarivate.com/apis/wos/swagger'
                 self.options = ['count',
                                     'databaseId',
                                     'edition',
@@ -170,7 +208,7 @@ class BibAPI:
                                     'viewField']
             elif apiname == "woslite":
                 self.base_url = 'https://wos-api.clarivate.com/api/woslite/'
-                self.doc_url = '- URL: https://clarivate.com/webofsciencegroup/solutions/xml-and-apis/\n- Swagger UI: https://api.clarivate.com/swagger-ui/?apikey= + [api_key] + &url=https://developer.clarivate.com/apis/woslite/swagger?forUser%3D + [user_id]\n    To find your user_id: 1) go to https://developer.clarivate.com/apis and log in 2) choose whatever API you have access to and click on "Information" 3) click on "View Swagger definition" at the bottom 4) your user_id is at the end of the url'
+                self.doc_url = '- URL: https://clarivate.com/webofsciencegroup/solutions/xml-and-apis/\n- Swagger UI: https://api.clarivate.com/swagger-ui/?apikey= + [api_key] + &url=https://developer.clarivate.com/apis/woslite/swagger'
                 self.options = ['count',
                                     'databaseId',
                                     'edition',
@@ -203,6 +241,9 @@ class BibAPI:
                               "elsevier": ["scopus","sciencedirect"],
                               "lens": [""],
                               "libris": [""],
+                              "openalex": [""],
+                              "overton": [""],
+                              "openapc": [""],
                               "ror": [""],
                               "unpaywall": [""]}
     def doc(self, service=None, apiname=""):
@@ -271,7 +312,7 @@ class BibAPI:
         if ALTMETRICS_API_KEY and "key" not in map(str.lower, params.keys()):
             params["key"] = ALTMETRICS_API_KEY
         return self.call(path=path, params=params, headers=headers, proxies=proxies, timeout=timeout, method=method)
-    def clarivate(self, path="", params={}, headers={}, proxies={}, timeout=None, method=None, apiname="woslite"):
+    def clarivate(self, path="", params={}, headers={}, proxies={}, timeout=None, method=None, apiname="wos"):
         global WOS_KEY
         self.__init__(service='clarivate', apiname=apiname)
         if WOS_KEY and "x-apikey" not in map(str.lower, headers.keys()):
@@ -312,6 +353,20 @@ class BibAPI:
         if "format" not in params.keys():
             params["format"] = "json"
         return self.call(path=path, params=params, headers=headers, proxies=proxies, timeout=timeout, method=method)
+    def openapc(self, path, params = {}, headers={}, proxies={}, timeout=None, method=None):
+        self.__init__(service='openapc')
+        return self.call(path=path, params=params, headers=headers, proxies=proxies, timeout=timeout, method=method)
+    def overton(self, path, params = {}, headers={}, proxies={}, timeout=None, method=None):
+        global OVERTON_KEY
+        self.__init__(service='overton')
+        if "api_key" not in map(str.lower, params.keys()):
+            params["api_key"] = OVERTON_KEY
+        if "format" not in map(str.lower, params.keys()):
+            params["format"] = "json"
+        return self.call(path=path, params=params, headers=headers, proxies=proxies, timeout=timeout, method=method)
+    def openalex(self, path, params = {}, headers={}, proxies={}, timeout=None, method=None):
+        self.__init__(service='openalex')
+        return self.call(path=path, params=params, headers=headers, proxies=proxies, timeout=timeout, method=method)
     def ror(self, path="organizations", params={}, headers={}, proxies={}, timeout=None, method=None):
         self.__init__(service='ror')
         return self.call(path=path, params=params, headers=headers, proxies=proxies, timeout=timeout, method=method)
@@ -340,8 +395,8 @@ def scopus_search(query,extraparams={},headers={},proxies={},timeout=None):
 def scopus_affiliations(ID,headers={},proxies={},timeout=None):
     #WARNING: ID is the "Scopus ID" as defined by Scopus, not EID (that we usually call Scopus ID)!
     TheClient = BibAPI()
-    res = TheClient.elsevier(path='abstract/scopus_id/'+ID, params={"field": "author,affiliation", "httpAccept": "application/json"}, apiname='scopus', headers=headers, proxies=proxies, timeout=timeout)
-    return safe_access(res,["abstracts-retrieval-response","affiliation"])
+    res = TheClient.elsevier(path='abstract/scopus_id/'+ID, params={"httpAccept": "application/json"}, apiname='scopus', headers=headers, proxies=proxies, timeout=timeout)
+    return list(safe_access(res,['abstracts-retrieval-response','item','bibrecord','head','author-group'],[]))
 
 def wos_search(query,databaseid="WOK",headers={},proxies={},timeout=None):
     TheClient = BibAPI()
@@ -393,6 +448,61 @@ def journal_has_apc(invar):
         return "no"
     else:
         return res
+
+def openalex_works(filters,params):
+    TheClient = BibAPI()
+    filterstring = ','.join([k+':'+filters[k] for k in filters.keys()])
+    return TheClient.openalex(path='works',params=params|{"filter": filterstring})
+
+def overton_policy_citations0(doi):
+    TheClient = BibAPI()
+    res = TheClient.overton(path="articles.php",params={"query": doi})
+    return safe_access(res,['results','results',0,'citations'],0)
+    
+def overton_policy_citations(doi):
+    TheClient = BibAPI()
+    res = TheClient.overton(path="documents.php",params={"plain_dois_cited": doi})
+    return (safe_access(res,['query','total_results'],0),len(safe_access(res,['facets','sources'],[])))
+
+def openapc_price(doi):
+    TheClient = BibAPI()
+    res = TheClient.openapc(path="cube/openapc/facts",params={"cut": "doi:"+doi.lower()})
+    return safe_access(res,[0,'euro'],"")
+
+def openapc_publisher_price(bibmetpublisher,year=None,min_npub=None,max_stdev=None):
+    from static_data import OpenAPCPublishers
+    # static_data can be found here: https://gita.sys.kth.se/kthb/kthbibliometrics-python/tree/master/include
+    openapcpublisher = safe_access(OpenAPCPublishers,[bibmetpublisher],bibmetpublisher).replace(',','\,')
+    TheClient = BibAPI()
+    Goodenough = False
+    if year:
+        DrillString = "publisher|period"
+        CutString = "publisher:"+openapcpublisher+"|period:"+str(year)
+    else:
+        DrillString = "publisher"
+        CutString = "publisher:"+openapcpublisher
+
+    res = TheClient.openapc(path="cube/openapc/aggregate",params={"drilldown": DrillString, "cut": CutString})
+    nres = safe_access(res,["summary","apc_num_items"],0)
+    stdev =  safe_access(res,["summary","apc_amount_stddev"],99999) #unrealistically high value
+    if not stdev:
+        stdev = 99999
+    if min_npub:
+        if max_stdev:
+            if nres >= min_npub and stdev <= max_stdev:
+                Goodenough = True
+        else:
+            if nres >= min_npub:
+                    Goodenough = True
+    else:
+        if max_stdev:
+            if stdev <= max_stdev:
+                Goodenough = True
+        else:
+            Goodenough = True
+
+    return (safe_access(res,["cells",0,"apc_amount_avg"],""), Goodenough)
+
 
 ## Scopus API calls
 
