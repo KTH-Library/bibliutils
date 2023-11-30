@@ -470,9 +470,10 @@ def openapc_price(doi):
     return safe_access(res,[0,'euro'],"")
 
 def openapc_publisher_price(bibmetpublisher,year=None,min_npub=None,max_stdev=None):
+    import urllib.parse
     from static_data import OpenAPCPublishers
     # static_data can be found here: https://gita.sys.kth.se/kthb/kthbibliometrics-python/tree/master/include
-    openapcpublisher = safe_access(OpenAPCPublishers,[bibmetpublisher],bibmetpublisher).replace(',','\,').replace('&','%26')
+    openapcpublisher = urllib.parse.quote(safe_access(OpenAPCPublishers,[bibmetpublisher],bibmetpublisher).replace(',','\,'))
     TheClient = BibAPI()
     Goodenough = False
     if year:
